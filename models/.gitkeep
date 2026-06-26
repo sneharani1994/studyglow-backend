@@ -1,0 +1,2 @@
+# Placeholder for database ORM models if needed in the future.
+# Currently database operations are handled directly via the Supabase client.

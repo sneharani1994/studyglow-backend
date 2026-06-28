@@ -61,11 +61,11 @@ const corsOptions = {
       origin.startsWith("http://localhost:") ||
       origin.startsWith("http://127.0.0.1:") ||
 
-      // Allow ALL Lovable preview domains
       /^https:\/\/.*\.lovable\.app$/.test(origin) ||
 
-      // Allow lovable.dev preview domains
-      /^https:\/\/.*\.lovable\.dev$/.test(origin);
+      /^https:\/\/.*\.lovable\.dev$/.test(origin) ||
+
+      /^https:\/\/.*\.lovableproject\.com$/.test(origin);
 
     if (isAllowed) {
       return callback(null, true);
@@ -74,7 +74,8 @@ const corsOptions = {
     console.log('Blocked Origin:', origin);
 
     // Do NOT throw an error here
-    return callback(new Error(`Origin ${origin} not allowed by CORS`));
+
+    return callback(null, false);
   },
 
 

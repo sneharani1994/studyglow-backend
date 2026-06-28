@@ -50,24 +50,33 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: (origin, callback) => {
+    console.log("Incoming Origin:", origin);
     // Allow Postman, curl, mobile apps
     if (!origin) {
       return callback(null, true);
     }
-
-    if (
+    const isAllowed =
       allowedOrigins.includes(origin) ||
-      origin.startsWith('http://localhost:') ||
-      origin.startsWith('http://127.0.0.1:')
-    ) {
+
+      origin.startsWith("http://localhost:") ||
+      origin.startsWith("http://127.0.0.1:") ||
+
+      // Allow ALL Lovable preview domains
+      /^https:\/\/.*\.lovable\.app$/.test(origin) ||
+
+      // Allow lovable.dev preview domains
+      /^https:\/\/.*\.lovable\.dev$/.test(origin);
+
+    if (isAllowed) {
       return callback(null, true);
     }
 
     console.log('Blocked Origin:', origin);
 
     // Do NOT throw an error here
-    return callback(null, false);
+    return callback(new Error(`Origin ${origin} not allowed by CORS`));
   },
+
 
   credentials: true,
 
@@ -88,7 +97,7 @@ const corsOptions = {
     'Authorization'
   ],
 
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 204,
 };
 
 app.use(cors(corsOptions));

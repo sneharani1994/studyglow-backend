@@ -25,13 +25,20 @@ const uploadRoutes = require('./routes/uploadRoutes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Enable Security Headers
+// ======================
+// Security
+// ======================
 app.use(helmet());
 
+// ======================
 // Logging
+// ======================
 app.use(morgan('dev'));
 
-// CORS Configurations
+// ======================
+// CORS Configuration
+// ======================
+
 const allowedOrigins = [
   'https://studyglow-ai-95.lovable.app',
   'http://localhost:3000',
@@ -41,29 +48,70 @@ const allowedOrigins = [
   'http://127.0.0.1:3000'
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    // Permit requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('http://localhost:')) {
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow Postman, curl, mobile apps
+    if (!origin) {
       return callback(null, true);
     }
-    return callback(new Error('CORS Policy: This origin is not allowed access.'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
-}));
 
+    if (
+      allowedOrigins.includes(origin) ||
+      origin.startsWith('http://localhost:') ||
+      origin.startsWith('http://127.0.0.1:')
+    ) {
+      return callback(null, true);
+    }
+
+    console.log('Blocked Origin:', origin);
+
+    // Do NOT throw an error here
+    return callback(null, false);
+  },
+
+  credentials: true,
+
+  methods: [
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'DELETE',
+    'OPTIONS'
+  ],
+
+  allowedHeaders: [
+    'Origin',
+    'X-Requested-With',
+    'Content-Type',
+    'Accept',
+    'Authorization'
+  ],
+
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
+// ======================
 // Body Parsers
+// ======================
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 app.use(cookieParser());
 
-// Global Rate Limiter: 100 requests per minute
-app.use(rateLimiter({ windowMs: 60 * 1000, max: 100 }));
+// ======================
+// Rate Limiter
+// ======================
+app.use(rateLimiter({
+  windowMs: 60 * 1000,
+  max: 100
+}));
 
-// Root status endpoint
+// ======================
+// Root Endpoint
+// ======================
 app.get('/', (req, res) => {
   res.status(200).json({
     status: 'online',
@@ -73,7 +121,9 @@ app.get('/', (req, res) => {
   });
 });
 
-// Register API Routes
+// ======================
+// API Routes
+// ======================
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/notes', notesRoutes);
@@ -87,15 +137,23 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/uploads', uploadRoutes);
 
-// Catch 404 paths
-app.use((req, res, next) => {
-  res.status(404).json({ error: `Path not found: ${req.originalUrl}` });
+// ======================
+// 404 Handler
+// ======================
+app.use((req, res) => {
+  res.status(404).json({
+    error: `Path not found: ${req.originalUrl}`
+  });
 });
 
-// Centralized error handler
+// ======================
+// Error Handler
+// ======================
 app.use(errorHandler);
 
-// Start listening
+// ======================
+// Start Server
+// ======================
 app.listen(PORT, () => {
   console.log(`[Server] StudyGlow AI Backend listening on port ${PORT}`);
   console.log(`[Server] Environment: ${process.env.NODE_ENV || 'development'}`);

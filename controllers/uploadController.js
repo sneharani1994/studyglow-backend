@@ -1,4 +1,4 @@
-const { supabase } = require('../config/supabase');
+const { supabase, supabaseAdmin } = require('../config/supabase');
 const { v4: uuidv4 } = require('uuid');
 
 exports.uploadFile = async (req, res, next) => {
@@ -13,7 +13,7 @@ exports.uploadFile = async (req, res, next) => {
     const bucketName = 'studyglow-assets';
 
     // Upload to Supabase Storage
-    const { data: storageData, error: storageError } = await supabase.storage
+    const { data: storageData, error: storageError } = await supabaseAdmin.storage
       .from(bucketName)
       .upload(uniqueFilename, req.file.buffer, {
         contentType: req.file.mimetype,
@@ -21,7 +21,7 @@ exports.uploadFile = async (req, res, next) => {
       });
 
     let fileUrl = '';
-    
+
     if (storageError) {
       console.warn('Supabase storage upload failed, checking fallback options. Error:', storageError.message);
       // Fallback: Check if we are in mock/local environment and return a simulated path
@@ -29,14 +29,14 @@ exports.uploadFile = async (req, res, next) => {
       fileUrl = `https://mock.studyglow-ai-storage.com/${uniqueFilename}`;
     } else {
       // Get Public URL
-      const { data: { publicUrl } } = supabase.storage
+      const { data: { publicUrl } } = supabaseAdmin.storage
         .from(bucketName)
         .getPublicUrl(uniqueFilename);
       fileUrl = publicUrl;
     }
 
     // Insert record into 'uploads' table
-    const { data: uploadRecord, error: dbError } = await supabase
+    const { data: uploadRecord, error: dbError } = await supabaseAdmin
       .from('uploads')
       .insert({
         user_id: userId,
@@ -68,7 +68,7 @@ exports.getUploads = async (req, res, next) => {
     const userId = req.user.id;
     const { noteId } = req.query;
 
-    let query = supabase
+    let query = supabaseAdmin
       .from('uploads')
       .select('*')
       .eq('user_id', userId);

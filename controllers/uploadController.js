@@ -23,17 +23,18 @@ exports.uploadFile = async (req, res, next) => {
     let fileUrl = '';
 
     if (storageError) {
-      console.warn('Supabase storage upload failed, checking fallback options. Error:', storageError.message);
-      // Fallback: Check if we are in mock/local environment and return a simulated path
-      // this ensures the application continues to run even if the user has not configured the storage bucket yet.
-      fileUrl = `https://mock.studyglow-ai-storage.com/${uniqueFilename}`;
-    } else {
-      // Get Public URL
-      const { data: { publicUrl } } = supabaseAdmin.storage
-        .from(bucketName)
-        .getPublicUrl(uniqueFilename);
-      fileUrl = publicUrl;
+      console.error("Supabase Storage Error:", storageError);
+
+      return res.status(400).json({
+        error: storageError.message
+      });
     }
+
+    const { data } = supabaseAdmin.storage
+      .from(bucketName)
+      .getPublicUrl(uniqueFilename);
+
+    fileUrl = data.publicUrl;
 
     // Insert record into 'uploads' table
     const { data: uploadRecord, error: dbError } = await supabaseAdmin

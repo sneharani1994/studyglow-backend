@@ -1,7 +1,7 @@
 // Polyfill global WebSocket for Node.js versions lacking global WebSocket support
 // This prevents the Supabase Client from crashing during initialization, as we do not use realtime sockets.
 if (typeof global.WebSocket === 'undefined') {
-  global.WebSocket = class {};
+  global.WebSocket = class { };
 }
 
 const { createClient } = require('@supabase/supabase-js');
@@ -11,6 +11,9 @@ require('dotenv').config();
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+console.log("Service Role Key Loaded:", !!supabaseServiceKey);
+console.log("Service Role Key Prefix:", supabaseServiceKey?.substring(0, 15));
 
 if (!supabaseUrl) {
   console.warn('WARNING: SUPABASE_URL is not set in environment variables.');

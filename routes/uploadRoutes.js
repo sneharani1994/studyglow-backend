@@ -18,5 +18,6 @@ router.use(authMiddleware);
 
 router.post('/upload', upload.single('file'), uploadController.uploadFile);
 router.get('/', uploadController.getUploads);
+router.delete('/:id', uploadController.deleteUpload);
 
 module.exports = router;

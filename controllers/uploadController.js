@@ -89,3 +89,49 @@ exports.getUploads = async (req, res, next) => {
     next(err);
   }
 };
+exports.deleteUpload = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    // Find the upload
+    const { data: file, error: findError } = await supabaseAdmin
+      .from("uploads")
+      .select("*")
+      .eq("id", id)
+      .eq("user_id", userId)
+      .single();
+
+    if (findError || !file) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    // Remove from Storage
+    const bucketName = "studyglow-assets";
+
+    const filePath = file.file_url.split("/object/public/" + bucketName + "/")[1];
+
+    if (filePath) {
+      await supabaseAdmin.storage
+        .from(bucketName)
+        .remove([filePath]);
+    }
+
+    // Remove from database
+    const { error: deleteError } = await supabaseAdmin
+      .from("uploads")
+      .delete()
+      .eq("id", id);
+
+    if (deleteError) {
+      return res.status(400).json({ error: deleteError.message });
+    }
+
+    res.json({
+      message: "File deleted successfully"
+    });
+
+  } catch (err) {
+    next(err);
+  }
+};

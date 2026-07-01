@@ -2,7 +2,8 @@ const https = require('https');
 require('dotenv').config();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const MODEL_NAME = 'gemini-1.5-flash';
+console.log("Gemini Key:", GEMINI_API_KEY);
+const MODEL_NAME = 'gemini-2.5-flash';
 
 /**
  * Call the Gemini API using Node's native HTTPS module for maximum environment compatibility.
@@ -19,7 +20,7 @@ const callGemini = (prompt, systemInstruction = '', jsonMode = false) => {
     }
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`;
-    
+
     const requestBody = {
       contents: [{
         parts: [{ text: prompt }]
@@ -93,7 +94,7 @@ const callGemini = (prompt, systemInstruction = '', jsonMode = false) => {
  */
 function getMockResponse(prompt, systemInstruction) {
   const lowercase = prompt.toLowerCase();
-  
+
   if (systemInstruction.includes('quiz') || lowercase.includes('quiz') || lowercase.includes('mcq')) {
     return JSON.stringify([
       {

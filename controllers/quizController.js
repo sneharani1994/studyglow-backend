@@ -31,6 +31,11 @@ exports.getQuizDetails = async (req, res, next) => {
     const { id } = req.params;
 
     // Fetch quiz metadata
+    console.log("Using Admin Client:", !!supabaseAdmin);
+    if (quizError) {
+      console.log("Quiz Error:", quizError);
+      return res.status(400).json({ error: quizError.message });
+    }
     const { data: quiz, error: quizError } = await supabaseAdmin
       .from('quizzes')
       .select('*, subjects(name)')

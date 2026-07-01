@@ -1,4 +1,4 @@
-const { supabase } = require('../config/supabase');
+const { supabase, supabaseAdmin } = require('../config/supabase');
 const { callGemini } = require('../services/gemini');
 
 // GET ALL QUIZZES
@@ -31,7 +31,7 @@ exports.getQuizDetails = async (req, res, next) => {
     const { id } = req.params;
 
     // Fetch quiz metadata
-    const { data: quiz, error: quizError } = await supabase
+    const { data: quiz, error: quizError } = await supabaseAdmin
       .from('quizzes')
       .select('*, subjects(name)')
       .eq('id', id)
@@ -95,14 +95,17 @@ exports.createQuiz = async (req, res, next) => {
       explanation: q.explanation || ''
     }));
 
-    const { data: insertedQuestions, error: questionsError } = await supabase
+    const { data: insertedQuestions, error: questionsError } = await supabaseAdmin
       .from('quiz_questions')
       .insert(questionsToInsert)
       .select();
 
     if (questionsError) {
       // Clean up quiz if question insertion fails
-      await supabase.from('quizzes').delete().eq('id', quiz.id);
+      await supabaseAdmin
+        .from('quizzes')
+        .delete()
+        .eq('id', quiz.id);
       return res.status(400).json({ error: `Questions Insertion Failed: ${questionsError.message}` });
     }
 
@@ -145,7 +148,7 @@ exports.attemptQuiz = async (req, res, next) => {
     questions.forEach(q => {
       const userChoice = answers[q.id];
       const isCorrect = userChoice !== undefined && parseInt(userChoice) === q.correct_option_index;
-      
+
       if (isCorrect) {
         score += 1;
       }
@@ -189,7 +192,7 @@ exports.attemptQuiz = async (req, res, next) => {
       const currentXp = profile.xp + earnedXp;
       // Simple leveling logic: level up every 200 XP
       const newLevel = Math.floor(currentXp / 200) + 1;
-      
+
       await supabase
         .from('profiles')
         .update({ xp: currentXp, level: newLevel, updated_at: new Date() })

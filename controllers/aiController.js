@@ -1,4 +1,4 @@
-const { supabase } = require('../config/supabase');
+const { supabaseAdmin } = require('../config/supabase');
 const { callGemini } = require('../services/gemini');
 
 // Helper to track AI history
@@ -141,7 +141,7 @@ Format in markdown:
 - **Final Answer**: Clearly state the solution boxed or bolded.
 - **Key Takeaway**: Short advice on similar questions.
 Subject context: ${subject || 'general'}`;
-    
+
     const solution = await callGemini(problem, systemInstruction);
 
     await trackAiUsage(req.user.id, 'homework_solver', problem, solution);
@@ -299,7 +299,7 @@ exports.codingAssistant = async (req, res, next) => {
 
     const systemInstruction = `You are an AI coding pair programmer. Help the student write, debug, or refactor code.
 Provide the corrected or completed code inside a standard markdown codeblock with language: ${language || 'javascript'}. After the code block, explain what changes were made.`;
-    
+
     const fullPrompt = `Instruction: ${prompt}\nLanguage: ${language || 'general'}\n${currentCode ? `Current Code:\n${currentCode}` : ''}`;
     const assistance = await callGemini(fullPrompt, systemInstruction);
 

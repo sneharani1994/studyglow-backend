@@ -60,6 +60,12 @@ exports.updateProfile = async (req, res, next) => {
 
     console.log("Updated Profile:", profile);
     console.log("Update Error:", error);
+    console.log("Auth User ID:", userId);
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, username");
+
+    console.log("Profiles:", profiles);
 
     if (error) {
       return res.status(400).json({ error: error.message });

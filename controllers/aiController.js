@@ -328,3 +328,41 @@ exports.getHistory = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.examPredictor = async (req, res) => {
+  try {
+    const { subject, syllabus } = req.body;
+
+    if (!subject) {
+      return res.status(400).json({
+        error: "Subject is required"
+      });
+    }
+
+    const prompt = `
+Subject: ${subject}
+
+Syllabus:
+${syllabus || "Not provided"}
+
+Predict the 10 most important exam questions.
+Rank them from highest to lowest probability.
+Explain why each question is important.
+Return the result in markdown.
+`;
+
+    const result = await callGemini(
+      prompt,
+      "You are an experienced university professor and exam paper setter."
+    );
+
+    res.json({
+      prediction: result
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      error: err.message
+    });
+  }
+};

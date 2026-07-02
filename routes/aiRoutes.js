@@ -19,6 +19,7 @@ router.post('/essay', aiController.essayGenerator);
 router.post('/grammar', aiController.grammarChecker);
 router.post('/code-explanation', aiController.codeExplanation);
 router.post('/coding-assistant', aiController.codingAssistant);
+router.post('/exam-predictor', aiController.examPredictor);
 router.get('/history', aiController.getHistory);
 
 module.exports = router;

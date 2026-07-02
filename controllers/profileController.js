@@ -26,36 +26,60 @@ exports.updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    console.log("===== UPDATE PROFILE =====");
-    console.log("User ID:", userId);
-    console.log("Body:", req.body);
+    const updates = {};
 
-    const updates = {
-      full_name: req.body.fullName,
-      updated_at: new Date().toISOString(),
-    };
+    if (req.body.fullName !== undefined)
+      updates.full_name = req.body.fullName;
 
-    console.log("Updates:", updates);
+    if (req.body.username !== undefined)
+      updates.username = req.body.username;
 
-    const { data, error } = await supabaseAdmin
+    if (req.body.avatarUrl !== undefined)
+      updates.avatar_url = req.body.avatarUrl;
+
+    updates.updated_at = new Date().toISOString();
+
+    // Update profiles table
+    const { data: profile, error } = await supabaseAdmin
       .from("profiles")
       .update(updates)
       .eq("id", userId)
-      .select("*");
-
-    console.log("Data:", data);
-    console.log("Error:", error);
+      .select()
+      .single();
 
     if (error) {
-      return res.status(400).json(error);
+      return res.status(400).json({ error: error.message });
     }
 
-    return res.json(data);
+    // Keep auth metadata in sync
+    const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+      userId,
+      {
+        user_metadata: {
+          full_name: profile.full_name,
+          avatar_url: profile.avatar_url,
+        },
+      }
+    );
+
+    if (authError) {
+      console.error("Auth metadata update failed:", authError);
+    }
+
+    return res.status(200).json({
+      message: "Profile updated successfully",
+      profile,
+    });
   } catch (err) {
     console.error(err);
-    return res.status(500).json(err);
+    return res.status(500).json({
+      error: "Internal Server Error",
+    });
   }
 };
+
+
+
 
 // UPDATE PASSWORD
 exports.updatePassword = async (req, res, next) => {

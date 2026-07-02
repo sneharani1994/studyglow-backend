@@ -25,9 +25,21 @@ exports.getProfile = async (req, res, next) => {
 exports.updateProfile = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const { username, fullName, avatarUrl, studyStreak, totalStudyHours, level, xp } = req.body;
+
+    console.log("Request Body:", req.body);
+
+    const {
+      username,
+      fullName,
+      avatarUrl,
+      studyStreak,
+      totalStudyHours,
+      level,
+      xp,
+    } = req.body;
 
     const updates = {};
+
     if (username !== undefined) updates.username = username;
     if (fullName !== undefined) updates.full_name = fullName;
     if (avatarUrl !== undefined) updates.avatar_url = avatarUrl;
@@ -38,28 +50,25 @@ exports.updateProfile = async (req, res, next) => {
 
     updates.updated_at = new Date();
 
-    // const { data: profile, error } = await supabase
-    //   .from('profiles')
-    //   .update(updates)
-    //   .eq('id', userId)
-    //   .select()
-    //   .single();
+    console.log("Updates:", updates);
 
-    console.log("User ID:", userId);
-
-    const { data: profile, error: existingError } = await supabase
+    const { data: profile, error } = await supabase
       .from("profiles")
-      .select("*")
-      .eq("id", userId);
+      .update(updates)
+      .eq("id", userId)
+      .select();
 
-    console.log("Existing:", profile);
-    console.log("Existing Error:", existingError);
+    console.log("Updated Profile:", profile);
+    console.log("Update Error:", error);
 
-    if (existingError) {
-      return res.status(400).json({ error: existingError.message });
+    if (error) {
+      return res.status(400).json({ error: error.message });
     }
 
-    return res.status(200).json({ message: 'Profile updated successfully', profile });
+    return res.status(200).json({
+      message: "Profile updated successfully",
+      profile,
+    });
   } catch (err) {
     next(err);
   }

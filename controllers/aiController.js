@@ -1,4 +1,4 @@
-const { supabaseAdmin } = require('../config/supabase');
+const { supabase, supabaseAdmin } = require('../config/supabase');
 const { callGemini } = require('../services/gemini');
 
 // Helper to track AI history
@@ -27,7 +27,9 @@ exports.summarizeNotes = async (req, res, next) => {
     await trackAiUsage(req.user.id, 'summarize', text, summary);
     return res.status(200).json({ summary });
   } catch (err) {
-    next(err);
+    return res.status(503).json({
+      error: err.message || "AI service is temporarily unavailable."
+    });
   }
 };
 

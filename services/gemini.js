@@ -61,8 +61,23 @@ const callGemini = (prompt, systemInstruction = '', jsonMode = false) => {
         try {
           const parsed = JSON.parse(body);
           if (res.statusCode >= 400) {
-            console.error('Gemini API Error Response:', parsed);
-            return reject(new Error(parsed.error?.message || `API request failed with status ${res.statusCode}`));
+            console.error("Gemini API Error Response:", parsed);
+
+            const message = parsed.error?.message || "";
+
+            if (
+              res.statusCode === 429 ||
+              res.statusCode === 503 ||
+              message.toLowerCase().includes("high demand")
+            ) {
+              return reject(
+                new Error(
+                  "The AI service is currently busy due to high demand. Please try again in a minute."
+                )
+              );
+            }
+
+            return reject(new Error(message || `API request failed with status ${res.statusCode}`));
           }
           const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
           if (!text) {

@@ -38,15 +38,25 @@ exports.updateProfile = async (req, res, next) => {
 
     updates.updated_at = new Date();
 
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', userId)
-      .select()
-      .single();
+    // const { data: profile, error } = await supabase
+    //   .from('profiles')
+    //   .update(updates)
+    //   .eq('id', userId)
+    //   .select()
+    //   .single();
 
-    if (error) {
-      return res.status(400).json({ error: error.message });
+    console.log("User ID:", userId);
+
+    const { data: profile, error: existingError } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId);
+
+    console.log("Existing:", profile);
+    console.log("Existing Error:", existingError);
+
+    if (existingError) {
+      return res.status(400).json({ error: existingError.message });
     }
 
     return res.status(200).json({ message: 'Profile updated successfully', profile });

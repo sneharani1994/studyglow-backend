@@ -68,13 +68,13 @@ const callGemini = (prompt, systemInstruction = '', jsonMode = false) => {
             if (
               res.statusCode === 429 ||
               res.statusCode === 503 ||
+              parsed.error?.status === "RESOURCE_EXHAUSTED" ||
+              message.toLowerCase().includes("quota exceeded") ||
               message.toLowerCase().includes("high demand")
             ) {
-              return reject(
-                new Error(
-                  "The AI service is currently busy due to high demand. Please try again in a minute."
-                )
-              );
+              console.log("Gemini unavailable. Returning mock response.");
+
+              return resolve(getMockResponse(prompt, systemInstruction));
             }
 
             return reject(new Error(message || `API request failed with status ${res.statusCode}`));

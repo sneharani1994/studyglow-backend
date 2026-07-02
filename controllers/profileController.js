@@ -50,17 +50,28 @@ exports.updateProfile = async (req, res, next) => {
 
     updates.updated_at = new Date();
 
+    console.log("User ID:", userId);
     console.log("Updates:", updates);
 
-    const { data: profile, error } = await supabase
+    console.log("Updating user:", userId);
+    console.log("Updates:", updates);
+
+    const { data: profile, error, count } = await supabaseAdmin
       .from("profiles")
       .update(updates)
       .eq("id", userId)
-      .select();
+      .select("*");
+
+    console.log("Result:", profile);
+    console.log("Error:", error);
+    console.log("Count:", count);
 
     console.log("Updated Profile:", profile);
     console.log("Update Error:", error);
     console.log("Auth User ID:", userId);
+    console.log("Profile:", profile);
+    console.log("Error:", error);
+
     const { data: profiles } = await supabase
       .from("profiles")
       .select("id, username");

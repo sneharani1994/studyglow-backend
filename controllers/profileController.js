@@ -22,72 +22,38 @@ exports.getProfile = async (req, res, next) => {
 };
 
 // UPDATE PROFILE
-exports.updateProfile = async (req, res, next) => {
+exports.updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    console.log("Request Body:", req.body);
-
-    const {
-      username,
-      fullName,
-      avatarUrl,
-      studyStreak,
-      totalStudyHours,
-      level,
-      xp,
-    } = req.body;
-
-    const updates = {};
-
-    if (username !== undefined) updates.username = username;
-    if (fullName !== undefined) updates.full_name = fullName;
-    if (avatarUrl !== undefined) updates.avatar_url = avatarUrl;
-    if (studyStreak !== undefined) updates.study_streak = studyStreak;
-    if (totalStudyHours !== undefined) updates.total_study_hours = totalStudyHours;
-    if (level !== undefined) updates.level = level;
-    if (xp !== undefined) updates.xp = xp;
-
-    updates.updated_at = new Date();
-
+    console.log("===== UPDATE PROFILE =====");
     console.log("User ID:", userId);
+    console.log("Body:", req.body);
+
+    const updates = {
+      full_name: req.body.fullName,
+      updated_at: new Date().toISOString(),
+    };
+
     console.log("Updates:", updates);
 
-    console.log("Updating user:", userId);
-    console.log("Updates:", updates);
-
-    const { data: profile, error, count } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from("profiles")
       .update(updates)
       .eq("id", userId)
       .select("*");
 
-    console.log("Result:", profile);
+    console.log("Data:", data);
     console.log("Error:", error);
-    console.log("Count:", count);
-
-    console.log("Updated Profile:", profile);
-    console.log("Update Error:", error);
-    console.log("Auth User ID:", userId);
-    console.log("Profile:", profile);
-    console.log("Error:", error);
-
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, username");
-
-    console.log("Profiles:", profiles);
 
     if (error) {
-      return res.status(400).json({ error: error.message });
+      return res.status(400).json(error);
     }
 
-    return res.status(200).json({
-      message: "Profile updated successfully",
-      profile,
-    });
+    return res.json(data);
   } catch (err) {
-    next(err);
+    console.error(err);
+    return res.status(500).json(err);
   }
 };
 

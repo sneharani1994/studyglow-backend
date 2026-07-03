@@ -147,6 +147,12 @@ exports.sendMessage = async (req, res, next) => {
     const { id } = req.params; // Session ID
     const { content } = req.body;
 
+    console.log("========== SEND MESSAGE ==========");
+    console.log("Session ID from URL:", id);
+    console.log("User ID from JWT:", userId);
+    console.log("Message:", content);
+    console.log("Looking for session...");
+
     if (!content) return res.status(400).json({ error: 'Message content is required' });
 
     // 1. Verify session belongs to user
@@ -156,6 +162,11 @@ exports.sendMessage = async (req, res, next) => {
       .eq('id', id)
       .eq('user_id', userId)
       .single();
+
+    console.log("Session:", session);
+    console.log("Session Error:", sessionErr);
+    console.log("req.params =", req.params);
+    console.log("req.user =", req.user);
 
     if (sessionErr || !session) {
       return res.status(404).json({ error: 'Chat session not found' });

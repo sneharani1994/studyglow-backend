@@ -1,4 +1,4 @@
-const { supabase } = require('../config/supabase');
+const { supabase, supabaseAdmin } = require('../config/supabase');
 const { callGemini } = require('../services/gemini');
 
 // GET ALL CHAT SESSIONS
@@ -36,7 +36,10 @@ exports.createSession = async (req, res, next) => {
     const userId = req.user.id;
     const { title } = req.body;
 
-    const { data: session, error } = await supabase
+    console.log("===== CREATE SESSION =====");
+    console.log("User:", userId);
+
+    const { data: session, error } = await supabaseAdmin
       .from('chat_sessions')
       .insert({
         user_id: userId,
@@ -47,7 +50,12 @@ exports.createSession = async (req, res, next) => {
       .select()
       .single();
 
-    if (error) return res.status(400).json({ error: error.message });
+    console.log("Session:", session);
+    console.log("Supabase Error:", error);
+
+    if (error) {
+      return res.status(400).json(error);
+    }
     return res.status(201).json({ message: 'Session created successfully', session });
   } catch (err) {
     next(err);
@@ -67,7 +75,7 @@ exports.updateSession = async (req, res, next) => {
     if (isFavourite !== undefined) updates.is_favourite = isFavourite;
     updates.updated_at = new Date();
 
-    const { data: session, error } = await supabase
+    const { data: session, error } = await supabaseAdmin
       .from('chat_sessions')
       .update(updates)
       .eq('id', id)
@@ -88,7 +96,7 @@ exports.deleteSession = async (req, res, next) => {
     const userId = req.user.id;
     const { id } = req.params;
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('chat_sessions')
       .delete()
       .eq('id', id)
@@ -161,8 +169,12 @@ exports.sendMessage = async (req, res, next) => {
       .order('created_at', { ascending: true })
       .limit(10); // Retrieve last 10 messages for context
 
+    if (historyErr) {
+      return res.status(400).json({ error: historyErr.message });
+    }
+
     // 3. Save User Message to DB
-    const { data: userMessage, error: userMsgErr } = await supabase
+    const { data: userMessage, error: userMsgErr } = await supabaseAdmin
       .from('messages')
       .insert({
         session_id: id,
@@ -177,7 +189,7 @@ exports.sendMessage = async (req, res, next) => {
     // 4. Construct AI System context and prompt
     const systemPrompt = `You are StudyGlow AI, an expert, encouraging, and friendly student study assistant.
 The student is asking a question about their studies. Maintain educational relevance.`;
-    
+
     // Format dialogue history for Gemini
     let conversationContext = '';
     if (history && history.length > 0) {
@@ -197,7 +209,7 @@ The student is asking a question about their studies. Maintain educational relev
     }
 
     // 6. Save AI Response to DB
-    const { data: aiMessage, error: aiMsgErr } = await supabase
+    const { data: aiMessage, error: aiMsgErr } = await supabaseAdmin
       .from('messages')
       .insert({
         session_id: id,
@@ -212,20 +224,20 @@ The student is asking a question about their studies. Maintain educational relev
     // If session title is still default "New Chat Session", rename it dynamically based on user prompt
     if (session.title === 'New Chat Session') {
       const dynamicTitle = content.length > 30 ? `${content.substring(0, 27)}...` : content;
-      await supabase
+      await supabaseAdmin
         .from('chat_sessions')
         .update({ title: dynamicTitle, updated_at: new Date() })
         .eq('id', id);
     } else {
       // Just touch updated_at
-      await supabase
+      await supabaseAdmin
         .from('chat_sessions')
         .update({ updated_at: new Date() })
         .eq('id', id);
     }
 
     // 7. Track AI usage
-    await supabase
+    const { error: historyInsertError } = await supabaseAdmin
       .from('ai_history')
       .insert({
         user_id: userId,
@@ -233,6 +245,10 @@ The student is asking a question about their studies. Maintain educational relev
         prompt: content,
         response: aiResponseText
       });
+
+    if (historyInsertError) {
+      console.error("AI History Error:", historyInsertError.message);
+    }
 
     return res.status(200).json({
       userMessage,

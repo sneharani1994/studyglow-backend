@@ -1,4 +1,4 @@
-const { supabase } = require('../config/supabase');
+const { supabase, supabaseAdmin } = require('../config/supabase');
 
 // GET PLANNER TASKS
 exports.getTasks = async (req, res, next) => {
@@ -6,7 +6,7 @@ exports.getTasks = async (req, res, next) => {
     const userId = req.user.id;
     const { timeFrame, status, priority, recurrence } = req.query; // daily, weekly, monthly
 
-    let query = supabase
+    let query = supabaseAdmin
       .from('planner_tasks')
       .select('*')
       .eq('user_id', userId);
@@ -42,6 +42,8 @@ exports.getTasks = async (req, res, next) => {
 
 // CREATE PLANNER TASK
 exports.createTask = async (req, res, next) => {
+  console.log("✅ Planner createTask called");
+  console.log(req.body);
   try {
     const userId = req.user.id;
     const { title, description, dueDate, status, priority, recurrence } = req.body;
@@ -50,7 +52,7 @@ exports.createTask = async (req, res, next) => {
       return res.status(400).json({ error: 'Task title is required' });
     }
 
-    const { data: task, error } = await supabase
+    const { data: task, error } = await supabaseAdmin
       .from('planner_tasks')
       .insert({
         user_id: userId,
@@ -64,11 +66,14 @@ exports.createTask = async (req, res, next) => {
       .select()
       .single();
 
+    console.log("Task:", task);
+    console.log("Error:", error);
+
     if (error) return res.status(400).json({ error: error.message });
 
     // Check if task needs immediate system reminder (trigger notification for due dates)
     if (dueDate) {
-      await supabase
+      await supabaseAdmin
         .from('notifications')
         .insert({
           user_id: userId,
@@ -101,7 +106,7 @@ exports.updateTask = async (req, res, next) => {
 
     updates.updated_at = new Date();
 
-    const { data: task, error } = await supabase
+    const { data: task, error } = await supabaseAdmin
       .from('planner_tasks')
       .update(updates)
       .eq('id', id)
@@ -113,7 +118,7 @@ exports.updateTask = async (req, res, next) => {
 
     // If marked completed, trigger notification
     if (status === 'completed') {
-      await supabase
+      await supabaseAdmin
         .from('notifications')
         .insert({
           user_id: userId,
@@ -135,7 +140,7 @@ exports.deleteTask = async (req, res, next) => {
     const userId = req.user.id;
     const { id } = req.params;
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('planner_tasks')
       .delete()
       .eq('id', id)

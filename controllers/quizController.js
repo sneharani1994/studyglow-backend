@@ -32,10 +32,6 @@ exports.getQuizDetails = async (req, res, next) => {
 
     // Fetch quiz metadata
     console.log("Using Admin Client:", !!supabaseAdmin);
-    if (quizError) {
-      console.log("Quiz Error:", quizError);
-      return res.status(400).json({ error: quizError.message });
-    }
     const { data: quiz, error: quizError } = await supabaseAdmin
       .from('quizzes')
       .select('*, subjects(name)')
@@ -43,7 +39,12 @@ exports.getQuizDetails = async (req, res, next) => {
       .eq('user_id', userId)
       .single();
 
-    if (quizError || !quiz) {
+    if (quizError) {
+      console.log("FULL ERROR:", quizError);
+      return res.status(400).json(quizError);
+    }
+
+    if (!quiz) {
       return res.status(404).json({ error: 'Quiz not found' });
     }
 
@@ -72,12 +73,17 @@ exports.createQuiz = async (req, res, next) => {
     const userId = req.user.id;
     const { title, description, subjectId, difficulty, questions } = req.body;
 
+    console.log("========== CREATE QUIZ ==========");
+    console.log("User ID:", userId);
+    console.log("Using Admin:", !!supabaseAdmin);
+    console.log("Request Body:", req.body);
+
     if (!title || !questions || !Array.isArray(questions) || questions.length === 0) {
       return res.status(400).json({ error: 'Title and questions are required' });
     }
 
     // Create quiz record
-    const { data: quiz, error: quizError } = await supabase
+    const { data: quiz, error: quizError } = await supabaseAdmin
       .from('quizzes')
       .insert({
         user_id: userId,
@@ -89,7 +95,11 @@ exports.createQuiz = async (req, res, next) => {
       .select()
       .single();
 
-    if (quizError) return res.status(400).json({ error: quizError.message });
+    console.log("Inserted Quiz:", quiz);
+    console.log("Insert Error:", quizError);
+
+
+    if (quizError) return res.status(400).json(quizError);
 
     // Format questions
     const questionsToInsert = questions.map(q => ({
@@ -169,7 +179,7 @@ exports.attemptQuiz = async (req, res, next) => {
     });
 
     // Save attempt to database
-    const { data: attempt, error: attemptError } = await supabase
+    const { data: attempt, error: attemptError } = await supabaseAdmin
       .from('quiz_attempts')
       .insert({
         user_id: userId,
@@ -198,7 +208,7 @@ exports.attemptQuiz = async (req, res, next) => {
       // Simple leveling logic: level up every 200 XP
       const newLevel = Math.floor(currentXp / 200) + 1;
 
-      await supabase
+      await supabaseAdmin
         .from('profiles')
         .update({ xp: currentXp, level: newLevel, updated_at: new Date() })
         .eq('id', userId);

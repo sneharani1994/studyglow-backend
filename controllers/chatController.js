@@ -215,6 +215,9 @@ exports.sendMessage = async (req, res, next) => {
       .select()
       .single();
 
+    console.log("User Message:", userMessage);
+    console.log("User Message Error:", userMsgErr);
+
     if (userMsgErr) return res.status(400).json({ error: userMsgErr.message });
 
     // 4. Construct AI System context and prompt
@@ -250,7 +253,14 @@ The student is asking a question about their studies. Maintain educational relev
       .select()
       .single();
 
-    if (aiMsgErr) return res.status(400).json({ error: aiMsgErr.message });
+    console.log("AI Message:", aiMessage);
+    console.log("AI Message Error:", aiMsgErr);
+
+    if (aiMsgErr) {
+      return res.status(400).json(aiMsgErr);
+    }
+
+
 
     // If session title is still default "New Chat Session", rename it dynamically based on user prompt
     if (session.title === 'New Chat Session') {

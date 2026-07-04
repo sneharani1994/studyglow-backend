@@ -116,7 +116,7 @@ exports.getMessages = async (req, res, next) => {
     const { id } = req.params; // Session ID
 
     // Verify session belongs to user
-    const { data: session, error: sessionErr } = await supabase
+    const { data: session, error: sessionErr } = await supabaseAdmin
       .from('chat_sessions')
       .select('id')
       .eq('id', id)
@@ -156,17 +156,37 @@ exports.sendMessage = async (req, res, next) => {
     if (!content) return res.status(400).json({ error: 'Message content is required' });
 
     // 1. Verify session belongs to user
-    const { data: session, error: sessionErr } = await supabase
-      .from('chat_sessions')
-      .select('title')
-      .eq('id', id)
-      .eq('user_id', userId)
-      .single();
 
-    console.log("Session:", session);
+    console.log("===== DEBUG SEND MESSAGE =====");
+    console.log("Session ID:", id);
+    console.log("User ID:", userId);
+
+    const { data: allSessions } = await supabaseAdmin
+      .from("chat_sessions")
+      .select("id, user_id, title");
+
+    console.log("All Sessions:", allSessions);
+
+    const { data: session, error: sessionErr } = await supabaseAdmin
+      .from("chat_sessions")
+      .select("*")
+      .eq("id", id)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    console.log("Found Session:", session);
     console.log("Session Error:", sessionErr);
-    console.log("req.params =", req.params);
+
+    const { data: sessionOnly } = await supabaseAdmin
+      .from("chat_sessions")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
+    console.log("Session by ID:", sessionOnly);
+
     console.log("req.user =", req.user);
+    console.log("req.params =", req.params);
 
     if (sessionErr || !session) {
       return res.status(404).json({ error: 'Chat session not found' });

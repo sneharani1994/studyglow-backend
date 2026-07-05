@@ -59,6 +59,12 @@ const callGemini = (prompt, systemInstruction = '', jsonMode = false) => {
       res.on('data', (chunk) => body += chunk);
       res.on('end', () => {
         try {
+
+          console.log("==================================");
+          console.log("HTTP Status:", res.statusCode);
+          console.log("Raw Response:", body);
+          console.log("==================================");
+
           const parsed = JSON.parse(body);
           if (res.statusCode >= 400) {
             console.error("Gemini API Error Response:", parsed);
@@ -101,6 +107,14 @@ const callGemini = (prompt, systemInstruction = '', jsonMode = false) => {
 
     req.write(dataString);
     req.end();
+    console.log("===== GEMINI REQUEST =====");
+    console.log(dataString);
+    try {
+      JSON.parse(dataString);
+      console.log("JSON is valid");
+    } catch (e) {
+      console.error("INVALID JSON:", e);
+    }
   });
 };
 

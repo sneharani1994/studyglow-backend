@@ -238,8 +238,12 @@ The student is asking a question about their studies. Maintain educational relev
     try {
       aiResponseText = await callGemini(finalPrompt, systemPrompt);
     } catch (aiErr) {
-      console.error('Gemini call failed during chat session:', aiErr);
-      aiResponseText = 'I apologize, but I encountered an error connecting to my AI service. Please try again in a moment.';
+      console.error("========== GEMINI ERROR ==========");
+      console.error(aiErr);
+      console.error(aiErr.response?.data);
+      console.error(aiErr.message);
+
+      throw aiErr;
     }
 
     // 6. Save AI Response to DB

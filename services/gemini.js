@@ -33,7 +33,11 @@ const callGemini = (prompt, systemInstruction = '', jsonMode = false) => {
 
     if (systemInstruction) {
       requestBody.systemInstruction = {
-        parts: [{ text: systemInstruction }]
+        parts: [
+          {
+            text: systemInstruction
+          }
+        ]
       };
     }
 
@@ -45,13 +49,17 @@ const callGemini = (prompt, systemInstruction = '', jsonMode = false) => {
 
     const dataString = JSON.stringify(requestBody);
 
+    console.log("===== GEMINI REQUEST =====");
+    console.log(dataString);
+
+
     const options = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Content-Length': dataString.length
+        'Content-Length': Buffer.byteLength(dataString)
       },
-      timeout: 15000 // 15s timeout
+      timeout: 60000 // 15s timeout
     };
 
     const req = https.request(url, options, (res) => {
@@ -101,14 +109,23 @@ const callGemini = (prompt, systemInstruction = '', jsonMode = false) => {
     });
 
     req.on('timeout', () => {
+      console.error("===== GEMINI TIMEOUT =====");
+      console.error("Prompt length:", prompt.length);
+      console.error("System length:", systemInstruction.length);
+
       req.destroy();
-      reject(new Error('Gemini API request timed out'));
+
+      reject(new Error("Gemini API request timed out"));
     });
 
+
+    console.log("===== GEMINI REQUEST BODY =====");
+    console.log(JSON.stringify(requestBody, null, 2));
+
     req.write(dataString);
+
     req.end();
-    console.log("===== GEMINI REQUEST =====");
-    console.log(dataString);
+
     try {
       JSON.parse(dataString);
       console.log("JSON is valid");

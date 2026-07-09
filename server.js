@@ -40,13 +40,15 @@ app.use(morgan('dev'));
 // ======================
 
 const allowedOrigins = [
-  'https://studyglow-ai-95.lovable.app',
+  process.env.CORS_ORIGIN,
+  process.env.FRONTEND_URL,
+
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:8080',
   'http://127.0.0.1:5173',
   'http://127.0.0.1:3000'
-];
+].filter(Boolean);
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -65,7 +67,11 @@ const corsOptions = {
 
       /^https:\/\/.*\.lovable\.dev$/.test(origin) ||
 
-      /^https:\/\/.*\.lovableproject\.com$/.test(origin);
+
+
+      /^https:\/\/.*\.lovableproject\.com$/.test(origin) ||
+
+      /^https:\/\/.*\.vercel\.app$/.test(origin);
 
     if (isAllowed) {
       return callback(null, true);

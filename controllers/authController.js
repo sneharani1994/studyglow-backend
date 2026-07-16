@@ -91,8 +91,10 @@ exports.forgotPassword = async (req, res, next) => {
       return res.status(400).json({ error: 'Email is required' });
     }
 
+    const frontendUrl = process.env.FRONTEND_URL || process.env.CORS_ORIGIN;
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: redirectTo || 'https://studyglow-ai-95.lovable.app/reset-password'
+      redirectTo: redirectTo || `${frontendUrl}/reset-password`
     });
 
     if (error) return res.status(400).json({ error: error.message });
@@ -175,16 +177,46 @@ exports.getSession = async (req, res, next) => {
 };
 
 // GOOGLE OAUTH URL GENERATOR
+// GOOGLE OAUTH URL GENERATOR
 exports.googleLogin = async (req, res, next) => {
   try {
+    const redirectTo =
+      req.query.redirect_to ||
+      `${process.env.CORS_ORIGIN}/app/dashboard`;
+
     const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider: "google",
       options: {
-        redirectTo: 'https://studyglow-ai-95.lovable.app/app/dashboard'
+        redirectTo
       }
     });
 
-    if (error) return res.status(400).json({ error: error.message });
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    return res.status(200).json({ url: data.url });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.githubLogin = async (req, res, next) => {
+  try {
+    const redirectTo =
+      req.query.redirect_to ||
+      `${process.env.CORS_ORIGIN}/app/dashboard`;
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "github",
+      options: {
+        redirectTo
+      }
+    });
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
 
     return res.status(200).json({ url: data.url });
   } catch (err) {

@@ -11,5 +11,6 @@ router.post('/reset-password', authController.resetPassword);
 router.post('/refresh-token', authController.refreshToken);
 router.get('/session', authMiddleware, authController.getSession);
 router.get('/google', authController.googleLogin);
+router.get('/github', authController.githubLogin);
 
 module.exports = router;

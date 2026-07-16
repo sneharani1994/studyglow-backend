@@ -1,11 +1,11 @@
-const { supabase } = require('../config/supabase');
+const { supabaseAdmin } = require('../config/supabase');
 
 exports.getDashboardStats = async (req, res, next) => {
   try {
     const userId = req.user.id;
 
     // 1. Fetch user profile (includes streak, XP, level, study hours)
-    const { data: profile, error: profileErr } = await supabase
+    const { data: profile, error: profileErr } = await supabaseAdmin
       .from('profiles')
       .select('*')
       .eq('id', userId)
@@ -16,7 +16,7 @@ exports.getDashboardStats = async (req, res, next) => {
     }
 
     // 2. Fetch recent notes (limit 5)
-    const { data: recentNotes } = await supabase
+    const { data: recentNotes } = await supabaseAdmin
       .from('notes')
       .select('id, title, updated_at, subject_id, subjects(name, color)')
       .eq('user_id', userId)
@@ -25,7 +25,7 @@ exports.getDashboardStats = async (req, res, next) => {
       .limit(5);
 
     // 3. Fetch recent chats (limit 5)
-    const { data: recentChats } = await supabase
+    const { data: recentChats } = await supabaseAdmin
       .from('chat_sessions')
       .select('id, title, updated_at')
       .eq('user_id', userId)
@@ -33,7 +33,7 @@ exports.getDashboardStats = async (req, res, next) => {
       .limit(5);
 
     // 4. Fetch planner task statistics
-    const { data: plannerTasks } = await supabase
+    const { data: plannerTasks } = await supabaseAdmin
       .from('planner_tasks')
       .select('status, due_date')
       .eq('user_id', userId);
@@ -49,13 +49,13 @@ exports.getDashboardStats = async (req, res, next) => {
     }
 
     // 5. Fetch flashcards count
-    const { count: flashcardsCount } = await supabase
+    const { count: flashcardsCount } = await supabaseAdmin
       .from('flashcards')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId);
 
     // 6. Fetch quiz statistics
-    const { data: quizAttempts } = await supabase
+    const { data: quizAttempts } = await supabaseAdmin
       .from('quiz_attempts')
       .select('score, total_questions')
       .eq('user_id', userId);
@@ -73,10 +73,59 @@ exports.getDashboardStats = async (req, res, next) => {
     }
 
     // 7. Fetch AI Usage count
-    const { count: aiUsageCount } = await supabase
+    const { count: aiUsageCount } = await supabaseAdmin
       .from('ai_history')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId);
+
+    // 8. Fetch uploads count (documents)
+    const { count: uploadsCount } = await supabaseAdmin
+      .from('uploads')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    // 9. Calculate learning streak from activity
+    // Check activity across quiz_attempts, ai_history, notes, uploads
+    let studyStreak = profile.study_streak || 0;
+    
+    // If streak is 0, compute from recent activity
+    if (studyStreak === 0) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      let streak = 0;
+      
+      for (let daysBack = 0; daysBack < 30; daysBack++) {
+        const dayStart = new Date(today);
+        dayStart.setDate(dayStart.getDate() - daysBack);
+        const dayEnd = new Date(dayStart);
+        dayEnd.setDate(dayEnd.getDate() + 1);
+        
+        const { count: activityCount } = await supabaseAdmin
+          .from('ai_history')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .gte('created_at', dayStart.toISOString())
+          .lt('created_at', dayEnd.toISOString());
+        
+        if (activityCount && activityCount > 0) {
+          streak++;
+        } else if (daysBack > 0) {
+          break; // Streak broken
+        }
+      }
+      studyStreak = streak;
+    }
+
+    // 10. Estimate study hours from activity if profile shows 0
+    let totalStudyHours = parseFloat(profile.total_study_hours) || 0;
+    if (totalStudyHours === 0) {
+      // Estimate: each AI session ~5 min, each quiz attempt ~3 min, each flashcard review ~1 min
+      const estimatedMinutes =
+        ((aiUsageCount || 0) * 5) +
+        (totalQuizAttempts * 3) +
+        ((flashcardsCount || 0) * 1);
+      totalStudyHours = Math.round((estimatedMinutes / 60) * 10) / 10;
+    }
 
     // Return aggregated payload
     return res.status(200).json({
@@ -86,12 +135,13 @@ exports.getDashboardStats = async (req, res, next) => {
         avatarUrl: profile.avatar_url,
         level: profile.level,
         xp: profile.xp,
-        studyStreak: profile.study_streak,
-        totalStudyHours: parseFloat(profile.total_study_hours)
+        studyStreak,
+        totalStudyHours
       },
       recentNotes: recentNotes || [],
       recentChats: recentChats || [],
       flashcardsCount: flashcardsCount || 0,
+      uploadsCount: uploadsCount || 0,
       plannerProgress: {
         totalTasks,
         completedTasks,
@@ -103,8 +153,8 @@ exports.getDashboardStats = async (req, res, next) => {
         averageScorePercentage: averageQuizScore
       },
       aiUsageCount: aiUsageCount || 0,
-      weeklyGoalHours: 10, // hardcoded target standard for Lovable widgets
-      weeklyActualHours: parseFloat(profile.total_study_hours) // fallback or mock representation
+      weeklyGoalHours: 10,
+      weeklyActualHours: totalStudyHours
     });
   } catch (err) {
     next(err);

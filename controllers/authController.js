@@ -187,20 +187,23 @@ exports.googleLogin = async (req, res, next) => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo
-      }
+        redirectTo,
+      },
     });
 
     if (error) {
       return res.status(400).json({ error: error.message });
     }
 
-    return res.status(200).json({ url: data.url });
+    // Redirect instead of returning JSON
+    return res.redirect(data.url);
+
   } catch (err) {
     next(err);
   }
 };
 
+//GITHUB
 exports.githubLogin = async (req, res, next) => {
   try {
     const redirectTo =
@@ -210,15 +213,17 @@ exports.githubLogin = async (req, res, next) => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
-        redirectTo
-      }
+        redirectTo,
+      },
     });
 
     if (error) {
       return res.status(400).json({ error: error.message });
     }
 
-    return res.status(200).json({ url: data.url });
+    // Redirect instead of returning JSON
+    return res.redirect(data.url);
+
   } catch (err) {
     next(err);
   }

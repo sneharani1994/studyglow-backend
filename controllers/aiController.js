@@ -1,10 +1,11 @@
 const { supabase, supabaseAdmin } = require('../config/supabase');
 const { callGemini } = require('../services/gemini');
+const { saveSessionQuiz } = require('../services/quizStore');
 
 // Helper to track AI history
 const trackAiUsage = async (userId, type, prompt, response) => {
   try {
-    await supabase.from('ai_history').insert({
+    await supabaseAdmin.from('ai_history').insert({
       user_id: userId,
       feature_type: type,
       prompt: prompt.substring(0, 1000), // Cap to prevent massive column inserts
@@ -77,7 +78,33 @@ Format of each question object:
     }
 
     await trackAiUsage(req.user.id, 'generate_quiz', topic, responseJson);
-    return res.status(200).json({ questions });
+
+    // Persist questions in session cache with a temporary UUID
+    const crypto = require('crypto');
+    const tempQuizId = crypto.randomUUID ? crypto.randomUUID() : 'temp-generated-quiz-id';
+    
+    // Assign temp UUIDs to questions for in-memory persistence
+    const questionsWithIds = questions.map((q, idx) => ({
+      id: q.id || (crypto.randomUUID ? crypto.randomUUID() : `temp-q-id-${idx}`),
+      quiz_id: tempQuizId,
+      question_text: q.question_text,
+      options: q.options,
+      correct_option_index: q.correct_option_index,
+      explanation: q.explanation || ''
+    }));
+
+    saveSessionQuiz(tempQuizId, {
+      quiz: {
+        id: tempQuizId,
+        user_id: req.user.id,
+        title: topic,
+        difficulty: difficulty || 'medium',
+        created_at: new Date().toISOString()
+      },
+      questions: questionsWithIds
+    });
+
+    return res.status(200).json({ questions: questionsWithIds });
   } catch (err) {
     next(err);
   }

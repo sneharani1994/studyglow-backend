@@ -8,7 +8,8 @@ const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 
-const supabaseUrl = process.env.SUPABASE_URL;
+const rawSupabaseUrl = process.env.SUPABASE_URL;
+const supabaseUrl = rawSupabaseUrl ? rawSupabaseUrl.replace(/\/rest\/v1\/?$/, '') : undefined;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 

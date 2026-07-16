@@ -19,14 +19,14 @@ exports.signup = async (req, res, next) => {
     });
 
     if (error) {
-  console.error("Supabase Login Error:", error);
+      console.error("Supabase Login Error:", error);
 
-  return res.status(400).json({
-    error: error.message,
-    code: error.code,
-    status: error.status
-  });
-}
+      return res.status(400).json({
+        error: error.message,
+        code: error.code,
+        status: error.status
+      });
+    }
 
     return res.status(201).json({
       message: 'Signup successful. Check your email for verification link.',
@@ -118,7 +118,7 @@ exports.resetPassword = async (req, res, next) => {
       return res.status(401).json({ error: 'Unauthorized: Reset token missing' });
     }
     const token = authHeader.split(' ')[1];
-    
+
     // Set active session context using the reset token
     const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
       access_token: token,
